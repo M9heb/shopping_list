@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shopping_list/data/categories.dart';
 
 class NewItem extends StatefulWidget {
@@ -10,6 +11,11 @@ class NewItem extends StatefulWidget {
 }
 
 class _NewItemState extends State<NewItem> {
+  final _formKey = GlobalKey<FormState>();
+  void _saveItem() {
+    _formKey.currentState!.validate();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -19,6 +25,7 @@ class _NewItemState extends State<NewItem> {
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
+          key: _formKey,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -28,7 +35,13 @@ class _NewItemState extends State<NewItem> {
                     maxLength: 50,
                     decoration: const InputDecoration(label: Text("Name")),
                     validator: (value) {
-                      return "The error here...";
+                      if (value == null ||
+                          value.isEmpty ||
+                          value.trim().length <= 1 ||
+                          value.trim().length > 50) {
+                        return "Must be between 1 and 50 characters.";
+                      }
+                      return null;
                     },
                   ),
                   Row(
@@ -40,7 +53,20 @@ class _NewItemState extends State<NewItem> {
                           decoration: const InputDecoration(
                             label: Text("Quantity"),
                           ),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly
+                          ],
                           initialValue: "1",
+                          validator: (value) {
+                            if (value == null ||
+                                value.isEmpty ||
+                                int.tryParse(value) == null ||
+                                int.tryParse(value)! <= 0) {
+                              return "Must be a valid positive number.";
+                            }
+                            return null;
+                          },
                         ),
                       ),
                       Expanded(
@@ -79,7 +105,7 @@ class _NewItemState extends State<NewItem> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.primary,
                       ),
-                      onPressed: () {},
+                      onPressed: _saveItem,
                       child: Text(
                         "Save item",
                         style: TextStyle(
@@ -90,7 +116,10 @@ class _NewItemState extends State<NewItem> {
                   SizedBox(
                     width: double.infinity,
                     child: TextButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        _formKey.currentState!.reset();
+                        Navigator.pop(context);
+                      },
                       child: Text("Cancel"),
                     ),
                   ),
