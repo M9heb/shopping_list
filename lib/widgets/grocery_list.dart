@@ -34,7 +34,12 @@ class _GroceryListState extends State<GroceryList> {
           'flutter-grocery-list-d5753-default-rtdb.firebaseio.com',
           'shopping-list.json');
       final response = await http.get(url);
-
+      if (response.body == 'null') {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
       final Map<String, dynamic> listData = json.decode(response.body);
       final List<GroceryItem> _loadedItemsList = [];
       for (final item in listData.entries) {
@@ -78,10 +83,41 @@ class _GroceryListState extends State<GroceryList> {
     }
   }
 
-  void _removeItem(groceryItem) {
+  void _removeItem(GroceryItem item) async {
+    final index = _groceryItems.indexOf(item);
     setState(() {
-      _groceryItems.remove(groceryItem);
+      _groceryItems.remove(item);
     });
+    final url = Uri.https(
+        'flutter-grocery-list-d5753-default-rtdb.firebaseio.com',
+        'shopping-list/${item.id}.json');
+
+    // try {
+    try {
+      final response = await http.delete(url);
+
+      if (response.statusCode >= 400) {
+        // Something went wrong, re-insert the item
+        setState(() {
+          _groceryItems.insert(index, item);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete item. Please try again.')),
+        );
+      }
+    } catch (error) {
+      setState(() {
+        _groceryItems.insert(index, item);
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete item. Please try again.')),
+      );
+    }
+    // } catch (error) {
+    //   _loadItems();
+    //   return;
+    // }
   }
 
   @override
@@ -97,6 +133,22 @@ class _GroceryListState extends State<GroceryList> {
           const Text(
             "There's nothing here!",
             style: TextStyle(fontSize: 18),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+            ),
+            onPressed: _addItem, // Disable while sending
+            icon:
+                Icon(Icons.add, color: Theme.of(context).colorScheme.onPrimary),
+            label: Text(
+              "Add one",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimary,
+              ),
+            ),
           ),
         ],
       ),
