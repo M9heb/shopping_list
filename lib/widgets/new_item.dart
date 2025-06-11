@@ -20,8 +20,11 @@ class _NewItemState extends State<NewItem> {
   var _enteredName = '';
   var _enteredQuantity = 1;
   var _selectedCategory = categories[Categories.vegetables]!;
-
+  var _isSending = false;
   void _saveItem() async {
+    setState(() {
+      _isSending = true;
+    });
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
       final url = Uri.https(
@@ -50,6 +53,9 @@ class _NewItemState extends State<NewItem> {
                 quantity: _enteredQuantity,
                 category: _selectedCategory),
           );
+          setState(() {
+            _isSending = false;
+          });
         }
       } else {
         return;
@@ -163,26 +169,41 @@ class _NewItemState extends State<NewItem> {
                 children: [
                   SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton(
+                    child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.primary,
                       ),
-                      onPressed: _saveItem,
-                      child: Text(
-                        "Save item",
+                      onPressed: _isSending
+                          ? null
+                          : _saveItem, // Disable while sending
+                      icon: _isSending
+                          ? SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                color: Theme.of(context).colorScheme.onPrimary,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Icon(Icons.save),
+                      label: Text(
+                        _isSending ? "Saving..." : "Save item",
                         style: TextStyle(
-                            color: Theme.of(context).colorScheme.onPrimary),
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
                       ),
                     ),
                   ),
                   SizedBox(
                     width: double.infinity,
                     child: TextButton(
-                      onPressed: () {
-                        _formKey.currentState!.reset();
-                        Navigator.pop(context);
-                      },
-                      child: Text("Cancel"),
+                      onPressed: _isSending
+                          ? null
+                          : () {
+                              _formKey.currentState!.reset();
+                              Navigator.pop(context);
+                            },
+                      child: const Text("Cancel"),
                     ),
                   ),
                 ],
